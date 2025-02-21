@@ -11,7 +11,7 @@ def validator(username: str, password: str):
     has_special_char = any(character in '!#@$%^&*' for character in password)
     return has_upper and has_digit and has_special_char
 
-def get_data(csv_file):
+def get_data(csv_file: str):
     with open(csv_file, newline='') as csvfile:
         reader_csv = csv.reader(csvfile)
         next(reader_csv)
@@ -23,7 +23,4 @@ def get_data(csv_file):
                 print(f'[¡] Your password {file[1]} {file[0]} is not secure')
 
         print(f'\nOperation Success !!!')
-
-
-get_data('hola.csv')
 

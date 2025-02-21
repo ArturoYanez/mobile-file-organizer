@@ -51,10 +51,8 @@ def check_ext(file_extension, extension_map, category_path = None):
 def organizer(directory: str):
     for filename in os.listdir(directory):
         path = os.path.join(directory, filename)
-        print(f'path: {path}')
         if os.path.isfile(path):
             ext = os.path.splitext(path)[1]
-            print(f' ext: {ext}')
             found, c_path = check_ext(ext, categories)
             if found:
                 n_directory = directory
@@ -62,11 +60,9 @@ def organizer(directory: str):
                     n_directory = os.path.join(n_directory, paths)
                 if not os.path.exists(n_directory):
                     os.makedirs(n_directory)
-                    print('direcoty created')
+                    print(f'Move {path} to {n_directory}')
                 shutil.move(path,n_directory)
             else:
                 print(f'Category dont exits')
-    print('Operation success!!!')
-
-cwd = os.getcwd()
+    print('\nOperation success')
 
