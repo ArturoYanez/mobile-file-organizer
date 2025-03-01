@@ -3,7 +3,7 @@ from datetime import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
 
 
-def create_backup(source_dir: str):
+def create_backup(source_dir):
     backup_dir = os.path.join(source_dir,'backups')
     if not os.path.exists(backup_dir):
         os.makedirs(backup_dir)

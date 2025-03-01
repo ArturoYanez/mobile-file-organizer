@@ -1,68 +1,87 @@
-import os
+import json
 import shutil
-categories = {
-        'documents': {
-            'text': ('.txt', '.md', '.rtf'),
-            'microsoft': ('.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx'),
-            'open': ('.odt', '.odp', '.ods'),
-            'pdf': ('.pdf'),
-            'latex': ('.tex',)
-            },
-        'images': {
-            'rasterize': ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff'),
-            'vector': ('.svg', '.eps', '.ai'),
-            'photoshop': ('.psd',),
-            'coreld': ('.cdr',)
-            },
-        'videos': ('.mp4', '.avi', '.mov', '.wmv', '.fiv', '.mkv'),
-        'audios': ('.mp3', '.wav', '.aac', '.flac', '.ogg', '.wma'),
-        'compress': ('.zip', '.rar', '.tar', '.gz', '.7z'),
-        'code': {
-            'source': {
-                'python': ('.py',),
-                'javascript': ('.js',),
-                'html': ('.html',),
-                'css': ('.css',),
-                'java': ('.java',),
-                'c++': ('.cpp',),
-                'c#': ('.cs',)
-                },
-            'scripts': ('.sh', '.bat', '.ps1')
-            },
-        'databases': ('.sql', '.db', '.mdb', '.accbd'),
-        'logs': ('.log',),
-        'other': ('.ini', '.cfg', '.conf')
-        }
+import logging
+from pathlib import Path
 
-def check_ext(file_extension, extension_map, category_path = None):
+
+def check_ext(file_extension, extension_map, category_path=None):
+    # Configurar logging
+    logging.basicConfig(level=logging.DEBUG)
+
+    # Validar entrada
+    if not isinstance(extension_map, dict):
+        raise ValueError("extension_map debe ser un diccionario")
+
     if category_path is None:
         category_path = []
+
+    # Normalizar extensión
+    file_extension = file_extension.lower()
+
+    # Buscar extensión en el mapa
     for key, value in extension_map.items():
-        if isinstance(value, tuple):
+        logging.debug(f"Buscando {file_extension} en {key}")
+
+        if isinstance(value, list):
             if file_extension in value:
+                logging.info(f"Extensión {file_extension} encontrada en {key}")
                 return True, category_path + [key]
+
         elif isinstance(value, dict):
             found, path = check_ext(file_extension, value, category_path + [key])
             if found:
-                return found, path 
+                return found, path
+
+    # Extensión no encontrada
+    logging.warning(f"Extensión {file_extension} no reconocida")
     return False, []
 
 
-def organizer(directory: str):
-    for filename in os.listdir(directory):
-        path = os.path.join(directory, filename)
-        if os.path.isfile(path):
-            ext = os.path.splitext(path)[1]
-            found, c_path = check_ext(ext, categories)
-            if found:
-                n_directory = directory
-                for paths in c_path:
-                    n_directory = os.path.join(n_directory, paths)
-                if not os.path.exists(n_directory):
-                    os.makedirs(n_directory)
-                    print(f'Move {path} to {n_directory}')
-                shutil.move(path,n_directory)
-            else:
-                print(f'Category dont exits')
-    print('\nOperation success')
+def organizer(directory: Path, categories_file: Path):
+    # Configurar logging
+    logging.basicConfig(level=logging.INFO)
+
+    # Convertir a Path
+    base_dir = directory
+
+    # Cargar categorías desde JSON
+    c_map = Path(categories_file)
+    if not c_map.exists():
+        logging.error(f"Archivo de categorías no encontrado: {c_map}")
+        return
+
+    with open(c_map) as f:
+        categories = json.load(f)
+
+    # Recorrer archivos en el directorio
+    for file in base_dir.iterdir():
+        file_path = base_dir / file.name
+
+        # Validar si es archivo
+        if not file_path.is_file():
+            continue
+
+        # Obtener extensión
+        ext = file_path.suffix.lower()
+
+        # Buscar categoría
+        found, c_path = check_ext(ext, categories)
+        if not found:
+            logging.warning(f"Ignorado: {file_path} (extensión no reconocida)")
+            continue
+
+        # Crear directorio de destino
+        n_directory = base_dir
+        for folder in c_path:
+            n_directory /= folder
+        n_directory.mkdir(parents=True, exist_ok=True)
+
+        # Mover archivo (manejar colisiones)
+        dest_file = n_directory / file.name
+        if dest_file.exists():
+            logging.warning(f"Advertencia: {dest_file} ya existe. Sobrescribiendo.")
+        shutil.move(file_path, dest_file)
+        logging.info(f"Movido: {file_path} -> {dest_file}")
+
+    logging.info("Organización completada.")
 
