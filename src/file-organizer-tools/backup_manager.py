@@ -1,21 +1,37 @@
-import os
+from pathlib import Path
 from datetime import datetime
 from zipfile import ZipFile, ZIP_DEFLATED
+import logging
 
 
-def create_backup(source_dir: str):
-    backup_dir = os.path.join(source_dir,'backups')
-    if not os.path.exists(backup_dir):
-        os.makedirs(backup_dir)
+def create_backup(source_dir: Path, output_path: Path):
 
+    # Crear directorio de backups
+    backup_dir = Path.home() / output_path
+    
+    # Crear el directorio si no existe
+    if not backup_dir.exists():
+        backup_dir.mkdir(parents=True)
+    
+    # Establecer fecha y hora de creacion de copia de seguridad
     timestamp = datetime.now().strftime("%d%m%y_%H%M%S")
-    zip_name = os.path.join(backup_dir,f'backup_{timestamp}.zip')
+
+    # Creae nombre de archivo para copia de seguridad
+    zip_name = backup_dir / f'backup_{timestamp}.zip'
+
+    # Crear copia de seguridad
     with ZipFile(zip_name, 'w', ZIP_DEFLATED) as zipf:
-        for root, dirs, files in os.walk(source_dir):
-            if backup_dir in root:
+
+        # Recorree archivos en el directorio solicitado
+        for file_path in source_dir.rglob('*'):
+
+            # Ignorar directorio paea backups
+            if backup_dir in file_path.parents or file_path == backup_dir:
                 continue
-            for file in files:
-                file_path = os.path.join(root, file)
-                arcname = os.path.relpath(file_path, source_dir)
-                zipf.write(file_path, arcname)
-    print(f'file {zip_name} created successfully')
+
+            # Guardar ruta relariva de archivo en relacion a la ruta objetivo
+            arcname = file_path.relative_to(source_dir)
+
+            # Comprimir nuestro archivo en el backup
+            zipf.write(file_path, arcname)
+    logging.info(f'file {zip_name} created successfully')
