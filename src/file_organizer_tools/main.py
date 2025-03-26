@@ -1,4 +1,3 @@
-import logging
 import argparse
 import logging
 from pathlib import Path
@@ -41,6 +40,7 @@ def main(settings):
         fo.organizer(
                 directory_path,
                 config.CATEGORIES_FILE,
+                output_base=Path(settings.get('FILE?ORGANIZER', 'output_path'))
                 exclude_list)
 
     elif args.b:
